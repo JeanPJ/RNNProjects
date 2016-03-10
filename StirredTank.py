@@ -90,15 +90,19 @@ for i in iterations:
 
 
 
-p1 = plt.plot(t,T_plot,label = 'Temperatura do tanque')
+f, sub = plt.subplots(2, sharex=True)
+
+
+p1 = sub[0].plot(t,T_plot,label = 'Temperatura do tanque')
 
 
 
-p2 = plt.plot(t,Q_plot,label = 'Vazao Inlet')
+p2 = sub[1].plot(t,Q_plot,label = 'Vazao Inlet')
 
-p3 = plt.plot(t,Ttube_plot,label = 'Temperatura Tubo')
+p3 = sub[0].plot(t,Ttube_plot,label = 'Temperatura Tubo')
 
-p4 = plt.plot(t,Tout_plot,label = 'Temperatura Saida')
+p4 = sub[0].plot(t,Tout_plot,label = 'Temperatura Saida')
+
 
 plt.legend()
 
@@ -109,7 +113,6 @@ plt.show(p2)
 plt.show(p3)
 
 plt.show(p4)
-
 
 
 
