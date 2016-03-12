@@ -80,7 +80,7 @@ for i in iterations:
     Ttube = RungeKutta4(t_step,Tube,Ttube,T)
     if i > np.floor(Vtube/(q*t_step)):
 
-        Tout = Ttube_plot[i-np.floor(Vtube/(q*t_step))]
+        Tout = Ttube_plot[i - np.floor(Vtube/(q*t_step))]
 
 
     Tout_plot[i] = Tout
