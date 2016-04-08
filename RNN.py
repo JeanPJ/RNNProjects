@@ -100,7 +100,12 @@ class RNN:
         Input = np.array(input)
         Input = Input.reshape(Input.size,1)
         if Input.size == self.n_in:
-            np.tanh(np.dot(self.Wrr*self.a)) + np.dot(self.Wir,input)
+            np.tanh(np.dot(self.Wrr*self.a) + np.dot(self.Wir,input))
+            y = dot(self.Wro,self.a) + self.Wbo
+            return y
+        else
+            print "vai dar nao"
+
         #rotina de atualizacao dos estados, retorna a saida.
 
 
