@@ -63,7 +63,7 @@ class RNN:
         #ref e o vetor de todas as saidas desejados no dado instante de tempo.
         for saida in range(self.n_out):
             #Transpose respective output view..
-            Theta = Wro[saida,:]
+            Theta = self.Wro[saida,:]
             Theta = Theta.reshape([self.neu,1])
 
             #MQR equations
@@ -73,20 +73,19 @@ class RNN:
             B = np.dot(self.P,self.a)
             C = np.dot(B,self.a.reshape([1,self.neu]))
             D = np.dot(C,self.P)
-            E = dot(self.a.reshape([1,self.neu]),self.P)
-            F = self.forget + dot(E,self.a)
+            E = np.dot(self.a.reshape([1,self.neu]),self.P)
+            F = self.forget + np.dot(E,self.a)
 
             #atualizacao final
             self.P = A - D/(self.forget*F)
 
             #calculo do erro
-            e = Wro[saida,:]*a - ref[saida]
-
-            Theta = Theta - e*dot(self.P,self.a)
+            e = np.dot(self.Wro[saida,:],self.a) - ref
+            Theta = Theta - e*np.dot(self.P,self.a)
 
             Theta = Theta.reshape([1,self.neu])
 
-            Wro[saida,:] = Theta
+            self.Wro[saida,:] = Theta
 
 
 
@@ -97,7 +96,9 @@ class RNN:
         #rotina de atualizacao dos estados, retorna a saida.
 
 
-RNN(100,1,1)
+oi = RNN(100,1,1)
+
+oi.Train(1)
 
 
 
