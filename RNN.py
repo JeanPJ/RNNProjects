@@ -61,6 +61,12 @@ class RNN:
 
     def Train(self,ref):
         #ref e o vetor de todas as saidas desejados no dado instante de tempo.
+        Ref = np.array(ref)
+        if self.n_out > 1:
+            Ref = Ref.reshape(len(ref),1)
+        #calcular o vetor de erros
+        e = np.dot(self.Wro,self.a) - Ref
+
         for saida in range(self.n_out):
             #Transpose respective output view..
             Theta = self.Wro[saida,:]
@@ -80,8 +86,7 @@ class RNN:
             self.P = A - D/(self.forget*F)
 
             #calculo do erro
-            e = np.dot(self.Wro[saida,:],self.a) - ref
-            Theta = Theta - e*np.dot(self.P,self.a)
+            Theta = Theta - e[saida]*np.dot(self.P,self.a)
 
             Theta = Theta.reshape([1,self.neu])
 
@@ -91,8 +96,11 @@ class RNN:
 
         #rotina de treinamento atraves dos minimos quadrados recursivos atualiza Wor.
 
-    def Update(self):
-        pass
+    def Update(self,input):
+        Input = np.array(input)
+        Input = Input.reshape(Input.size,1)
+        if Input.size == self.n_in:
+            np.tanh(np.dot(self.Wrr*self.a)) + np.dot(self.Wir,input)
         #rotina de atualizacao dos estados, retorna a saida.
 
 
