@@ -100,11 +100,11 @@ class RNN:
         Input = np.array(input)
         Input = Input.reshape(Input.size,1)
         if Input.size == self.n_in:
-            np.tanh(np.dot(self.Wrr*self.a) + np.dot(self.Wir,input))
-            y = dot(self.Wro,self.a) + self.Wbo
+            np.tanh(np.dot(self.Wrr,self.a) + np.dot(self.Wir,input))
+            y = np.dot(self.Wro,self.a) + self.Wbo
             return y
-        else
-            print "vai dar nao"
+        else:
+            raise ValueError("input must have size n_in")
 
         #rotina de atualizacao dos estados, retorna a saida.
 
@@ -112,6 +112,8 @@ class RNN:
 oi = RNN(100,1,1)
 
 oi.Train(1)
+
+oi.Update(2)
 
 
 
