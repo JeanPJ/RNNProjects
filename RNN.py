@@ -1,5 +1,6 @@
 __author__ = 'jean'
 import numpy as np
+import matplotlib.pyplot as plt
 
 def Sparcity(M,psi):
     N = np.empty_like(M)
@@ -12,7 +13,7 @@ def Sparcity(M,psi):
                 N[linha][coluna] = 1
 
     return N*M
-class RNN:
+class rNN:
 
     def __init__(self,neu,n_in,n_out,gama=0.5,ro=1,psi=0.5,in_scale=0.1,bias_scale=0.5,alfa=10,forget = 1-10**-6.0):
         #All matrixes are initialized under the normal distribution.
@@ -100,8 +101,8 @@ class RNN:
         Input = np.array(input)
         Input = Input.reshape(Input.size,1)
         if Input.size == self.n_in:
-            np.tanh(np.dot(self.Wrr,self.a) + np.dot(self.Wir,input))
-            y = np.dot(self.Wro,self.a) + self.Wbo
+            self.a = (1-self.leakrate)*self.a + self.leakrate*np.tanh(np.dot(self.Wrr,self.a) + np.dot(self.Wir,Input))
+            y = np.dot(self.Wro,self.a) #+ self.Wbo
             return y
         else:
             raise ValueError("input must have size n_in")
@@ -109,11 +110,20 @@ class RNN:
         #rotina de atualizacao dos estados, retorna a saida.
 
 
-oi = RNN(100,1,1)
+#oi = rNN(100,1,1)
 
-oi.Train(1)
+#oi.Train(1)
 
-oi.Update(2)
+#t = np.arange(0,600,0.01)
+
+#Y = np.sin(t)
+
+#plt.plot(t,Y)
+
+#plt.show()
+
+
+#oi.Update(2)
 
 
 
