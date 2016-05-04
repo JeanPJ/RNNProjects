@@ -3,7 +3,12 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-
+def delay_of_signal(signal,steps_ahead = 23): #less powerful version of dataset_time_window, for testing purposes.
+    signal = np.array(signal)
+    signal.shape = (len(signal), 1)
+    signal_output = signal[steps_ahead:]
+    signal_input = signal[:-steps_ahead]
+    return signal_input,signal_output
 
 def Euler(step,f,x,u):
     xnext = x + step*f(x,u)
@@ -43,7 +48,7 @@ def RungeKutta4(step,f,x,u): #runge kutta
 
 
 
-
+delta = 30
 t_step = 0.1 #periodo de amostragem, nao funciona coms
 Vtube = 1.02 #volume no tubo de transporte
 

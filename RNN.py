@@ -1,6 +1,5 @@
 __author__ = 'jean'
 import numpy as np
-import matplotlib.pyplot as plt
 
 def Sparcity(M,psi):
     N = np.empty_like(M)
@@ -106,6 +105,14 @@ class rNN:
             return y
         else:
             raise ValueError("input must have size n_in")
+
+
+
+    def CopyWeights(self, Rede):
+        if self.Wro.shape == Rede.Wro.shape:
+            self.Wro = Rede.Wro
+        else:
+            print "shapes of the weights are not equal"
 
         #rotina de atualizacao dos estados, retorna a saida.
 
