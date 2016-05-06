@@ -3,6 +3,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from RNN import *
+
 def delay_of_signal(signal,steps_ahead = 23): #less powerful version of dataset_time_window, for testing purposes.
     signal = np.array(signal)
     signal.shape = (len(signal), 1)
@@ -45,10 +47,14 @@ def RungeKutta4(step,f,x,u): #runge kutta
 
     return xnext
 
+def UpdateTimeWindow(A,x): #Dado um array unidimensional A, elimina A[1] e acrescenta A[len(A)-1] = x
+    B = A[1:]
+    np.append(B,x)
+    return B
 
 
+#Parametros do problema.
 
-delta = 30
 t_step = 0.1 #periodo de amostragem, nao funciona coms
 Vtube = 1.02 #volume no tubo de transporte
 
@@ -70,11 +76,62 @@ Tout = Ttube
 Q = 0.0167 +0.01*np.sin(t)
 q = 0.0167
 
+# A Rede
+delta = 30
+neurons = 500
+inputs = 2
+outputs = 1
+gama = 0.5
+ro = 1
+psi = 0.5
+f_ir = 0.1
+f_br = 0.5
+
+CtrlNetTrainer = rNN(neurons,inputs,outputs,gama,ro,psi,f_ir,f_br)
+CtrlNetController = rNN(neurons,inputs,outputs,gama,ro,psi,f_ir,f_br)
+
+#Criacao da janela da condicao inicial.
+
+q_past = np.empty_like(np.arange(delta))
+T_past = np.empty_like(q_past)
+Ttube_past =  np.empty_like(q_past)
+Tout_past = np.empty_like(q_past)
+Tfuturo = 30 #referencia degrau.
+
+for i in range(delta): #Numero de passos necessarios para dar o equivalente a passagem no tempo de delta.
+
+
+    T_past[i] = T
+    Ttube_past[i] = Ttube
+    q_past[i] = q
+    T = RungeKutta4(t_step,StirredTank,T,q)
+    Ttube = RungeKutta4(t_step,Tube,Ttube,T)
+    if i > np.floor(Vtube/(q*t_step)):
+
+        Tout = Ttube_past[i - np.floor(Vtube/(q*t_step))]
+
+
+    Tout_past[i] = Tout
 
 for i in iterations:
 
     #espaco para definicao do sinal de controle, onde entraria a rede
-    q = Q[i]
+    #q = Q[i]
+
+    #etapa de treino
+    CtrlNetTrainer.Update([Tout_past[0],Tout])
+    CtrlNetTrainer.Train(q_past[0])
+
+    #etapa de teste
+    CtrlNetController.CopyWeights(CtrlNetTrainer)
+    q = CtrlNetController.Update([Tout,Tfuturo])
+
+    if q > 0.03:
+        q = 0.03
+    if q < 0.005:
+        q = 0.005
+
+
 
 
     #fim do espaco para a lei de controle
@@ -89,6 +146,9 @@ for i in iterations:
 
 
     Tout_plot[i] = Tout
+
+    q_past = UpdateTimeWindow(q_past,q)
+    Tout_past = UpdateTimeWindow(Tout_past,Tout)
 
 
 
