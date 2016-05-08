@@ -49,18 +49,19 @@ def RungeKutta4(step,f,x,u): #runge kutta
 
 def UpdateTimeWindow(A,x): #Dado um array unidimensional A, elimina A[1] e acrescenta A[len(A)-1] = x
     B = A[1:]
-    np.append(B,x)
+    B = np.append(B,x)
     return B
 
 
 #Parametros do problema.
 
-t_step = 0.1 #periodo de amostragem, nao funciona coms
+t_step = 0.1 #periodo de amostragem da simulacao.
+t_Ctrl = 4 #Periodo de amostragem do controle.
 Vtube = 1.02 #volume no tubo de transporte
 
 T0 = 0 #condicao inicial
 
-t = np.arange(0,600,t_step) #tempo de simulacao
+t = np.arange(0,1000,t_step) #tempo de simulacao
 
 iterations = range(len(t))
 Q_plot = np.empty_like(t)
@@ -78,6 +79,7 @@ q = 0.0167
 
 # A Rede
 delta = 30
+delta_converted = int(round(delta*t_Ctrl/t_step))
 neurons = 500
 inputs = 2
 outputs = 1
@@ -92,13 +94,13 @@ CtrlNetController = rNN(neurons,inputs,outputs,gama,ro,psi,f_ir,f_br)
 
 #Criacao da janela da condicao inicial.
 
-q_past = np.empty_like(np.arange(delta))
+q_past = np.empty_like(np.arange(delta_converted))
 T_past = np.empty_like(q_past)
 Ttube_past =  np.empty_like(q_past)
 Tout_past = np.empty_like(q_past)
-Tfuturo = 30 #referencia degrau.
+Tfuturo = 50 #referencia degrau.
 
-for i in range(delta): #Numero de passos necessarios para dar o equivalente a passagem no tempo de delta.
+for i in range(delta_converted):#Numero de passos necessarios para dar o equivalente a passagem no tempo de delta.
 
 
     T_past[i] = T
@@ -113,23 +115,24 @@ for i in range(delta): #Numero de passos necessarios para dar o equivalente a pa
 
     Tout_past[i] = Tout
 
+print "Janela de Tempo inicial definida"
 for i in iterations:
-
+    print "timestep %f of %f" %(i, len(t))
     #espaco para definicao do sinal de controle, onde entraria a rede
     #q = Q[i]
-
+    if i%(t_Ctrl/t_step) == 0:
     #etapa de treino
-    CtrlNetTrainer.Update([Tout_past[0],Tout])
-    CtrlNetTrainer.Train(q_past[0])
+        CtrlNetTrainer.Update([Tout_past[0],Tout])
+        CtrlNetTrainer.Train(q_past[0])
 
     #etapa de teste
-    CtrlNetController.CopyWeights(CtrlNetTrainer)
-    q = CtrlNetController.Update([Tout,Tfuturo])
+        CtrlNetController.CopyWeights(CtrlNetTrainer)
+        q = CtrlNetController.Update([Tout,Tfuturo])
 
-    if q > 0.03:
-        q = 0.03
-    if q < 0.005:
-        q = 0.005
+        if q > 0.03:
+            q = 0.03
+        if q < 0.005:
+            q = 0.005
 
 
 
@@ -142,7 +145,7 @@ for i in iterations:
     Ttube = RungeKutta4(t_step,Tube,Ttube,T)
     if i > np.floor(Vtube/(q*t_step)):
 
-        Tout = Ttube_plot[i - np.floor(Vtube/(q*t_step))]
+        Tout = Ttube_plot[i - round(Vtube/(q*t_step))]
 
 
     Tout_plot[i] = Tout
@@ -169,7 +172,9 @@ p3 = sub[0].plot(t,Ttube_plot,label = 'Temperatura Tubo')
 p4 = sub[0].plot(t,Tout_plot,label = 'Temperatura Saida')
 
 
-plt.legend()
+sub[0].legend()
+
+sub[1].legend()
 
 plt.show(p1)
 
