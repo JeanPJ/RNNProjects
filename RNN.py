@@ -99,7 +99,7 @@ class rNN:
 
         #rotina de treinamento atraves dos minimos quadrados recursivos atualiza Wor.
 
-    def Update(self,input):
+    def Update(self,input): # input has to have same size as n_in. Returns the output as shape (2,1), so if you want to plot the data, a buffer is mandatory.
         Input = np.array(input)
         Input = Input.reshape(Input.size,1)
         if Input.size == self.n_in:
