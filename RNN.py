@@ -50,7 +50,7 @@ class rNN:
 
         #initial conditions.
 
-        self.a = np.zeros([neu,1])
+        self.a = np.random.normal(0,1,[neu,1])
 
         #covariance matrix
         self.P = np.eye(neu)/alfa

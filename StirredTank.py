@@ -5,6 +5,18 @@ import matplotlib.pyplot as plt
 
 from RNN import *
 
+def FindEquilibrium(T):
+
+    Ti = 15.0 #temperatura de entrada
+    Q = 1100.0 #Calor
+    ro = 1.0 #densidade
+    cp = 4186.0 #coeficiente calorifico
+
+    invq = (T - Ti)*ro*cp/Q
+
+    q = 1/invq
+
+    return q
 
 def delay_of_signal(signal,steps_ahead = 23): #less powerful version of dataset_time_window, for testing purposes.
     signal = np.array(signal)
@@ -56,13 +68,13 @@ def UpdateTimeWindow(A,x): #Dado um array unidimensional A, elimina A[1] e acres
 
 #Parametros do problema.
 
-t_step = 0.1 #periodo de amostragem da simulacao.
+t_step = 0.5 #periodo de amostragem da simulacao.
 t_Ctrl = 4 #Periodo de amostragem do controle.
 Vtube = 1.02 #volume no tubo de transporte
 
 T0 = 0 #condicao inicial
 
-t = np.arange(0,2000,t_step) #tempo de simulacao
+t = np.arange(0,1000,t_step) #tempo de simulacao
 
 iterations = range(len(t))
 Q_plot = np.empty_like(t)
@@ -101,6 +113,9 @@ Ttube_past =  np.empty_like(q_past)
 Tout_past = np.empty_like(q_past)
 Tfuturo = 30 #referencia degrau.
 Tref_plot = np.empty_like(t)
+Training_Error_plot = np.empty_like(t)
+
+Control_plot = np.empty_like(t)
 
 for i in range(delta_converted):#Numero de passos necessarios para dar o equivalente a passagem no tempo de delta.
 
@@ -116,7 +131,7 @@ for i in range(delta_converted):#Numero de passos necessarios para dar o equival
 
 
     Tout_past[i] = Tout + np.random.randn()
-    q = 0.017
+    q = FindEquilibrium(Tfuturo)
 
 for i in iterations:
     #espaco para definicao do sinal de controle, onde entraria a rede
@@ -124,12 +139,16 @@ for i in iterations:
     if i%(t_Ctrl/t_step) == 0:
     #etapa de treino
         white_noise = np.random.randn()
-        CtrlNetTrainer.Train(q_past[0])
         CtrlNetTrainer.Update([Tout_past[0],Tout + white_noise])
+        CtrlNetTrainer.Train(q_past[0])
+        trainingerror = CtrlNetTrainer.trainingError(q_past[0])
+
 
     #etapa de teste
         CtrlNetController.CopyWeights(CtrlNetTrainer)
         q = CtrlNetController.Update([Tout+ white_noise,Tfuturo])
+
+        control = q
 
         if q > 0.03:
             q = 0.03
@@ -139,7 +158,7 @@ for i in iterations:
 
 
 
-
+    Training_Error_plot[i] = trainingerror
     #fim do espaco para a lei de controle
     T_plot[i] = T
     Ttube_plot[i] = Ttube
@@ -153,6 +172,7 @@ for i in iterations:
 
     Tout_plot[i] = Tout
     Tref_plot[i] = Tfuturo
+    Control_plot[i] = control
 
     q_past = UpdateTimeWindow(q_past,q)
     Tout_past = UpdateTimeWindow(Tout_past,Tout)
@@ -163,7 +183,7 @@ for i in iterations:
 
 
 
-f, sub = plt.subplots(2, sharex=True)
+f, sub = plt.subplots(4, sharex=True)
 
 
 p1 = sub[0].plot(t,T_plot,label = 'Temperatura do tanque')
@@ -178,10 +198,17 @@ p4 = sub[0].plot(t,Tout_plot,label = 'Temperatura Saida')
 
 p5 = sub[0].plot(t,Tref_plot,label = 'Referencia')
 
+p6 = sub[2].plot(t,Training_Error_plot,label = 'erro de treinamento')
+
+p7 = sub[3].plot(t,Control_plot,label = 'acao de controle')
 
 sub[0].legend()
 
 sub[1].legend()
+
+sub[2].legend()
+
+sub[3].legend()
 
 plt.show(p1)
 
