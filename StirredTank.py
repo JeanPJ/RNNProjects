@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from RNN import *
 
-def FindEquilibrium(T):
+def FindEquilibrium_q(T):
 
     Ti = 15.0 #temperatura de entrada
     Q = 1100.0 #Calor
@@ -17,6 +17,16 @@ def FindEquilibrium(T):
     q = 1/invq
 
     return q
+
+def FindEquilibrium_T(q):
+
+    Ti = 15.0 #temperatura de entrada
+    Q = 1100.0 #Calor
+    ro = 1.0 #densidade
+    cp = 4186.0 #coeficiente calorifico
+
+
+    return Ti + Q/(q*ro*cp)
 
 def delay_of_signal(signal,steps_ahead = 23): #less powerful version of dataset_time_window, for testing purposes.
     signal = np.array(signal)
@@ -90,6 +100,14 @@ Tout = Ttube
 Q = 0.0167 +0.01*np.sin(t)
 q = 0.0167
 
+qmax = 0.03
+
+qmin = 0.005
+
+Tmax = FindEquilibrium_T(qmin)
+
+Tmin = FindEquilibrium_T(qmax)
+
 # A Rede
 delta = 30
 delta_converted = int(round(delta*t_Ctrl/t_step))
@@ -119,7 +137,6 @@ Control_plot = np.empty_like(t)
 
 for i in range(delta_converted):#Numero de passos necessarios para dar o equivalente a passagem no tempo de delta.
 
-    q = q + 0.001*np.random.randn()
     T_past[i] = T
     Ttube_past[i] = Ttube
     q_past[i] = q
@@ -131,7 +148,7 @@ for i in range(delta_converted):#Numero de passos necessarios para dar o equival
 
 
     Tout_past[i] = Tout + np.random.randn()
-    q = FindEquilibrium(Tfuturo)
+    q = 0.0167
 
 for i in iterations:
     #espaco para definicao do sinal de controle, onde entraria a rede
@@ -139,14 +156,14 @@ for i in iterations:
     if i%(t_Ctrl/t_step) == 0:
     #etapa de treino
         white_noise = np.random.randn()
-        CtrlNetTrainer.Update([Tout_past[0],Tout + white_noise])
+        CtrlNetTrainer.Update([(Tout_past[0]-Tmin)/Tmax,((Tout + white_noise)-Tmin)/Tmax])
         CtrlNetTrainer.Train(q_past[0])
         trainingerror = CtrlNetTrainer.trainingError(q_past[0])
 
 
     #etapa de teste
         CtrlNetController.CopyWeights(CtrlNetTrainer)
-        q = CtrlNetController.Update([Tout+ white_noise,Tfuturo])
+        q = CtrlNetController.Update([((Tout+ white_noise)-Tmin)/Tmax,(Tfuturo-Tmin)/Tmax])
 
         control = q
 
