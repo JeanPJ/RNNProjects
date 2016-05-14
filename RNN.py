@@ -14,7 +14,7 @@ def Sparcity(M,psi):
     return N*M
 class rNN:
 
-    def __init__(self,neu,n_in,n_out,gama=0.5,ro=1,psi=0.5,in_scale=0.1,bias_scale=0.5,alfa=10,forget = 1-10**-6.0):
+    def __init__(self,neu,n_in,n_out,gama=0.5,ro=1,psi=0.5,in_scale=0.1,bias_scale=0.5,alfa=10.0,forget = 1.0-10.0**-6.0):
         #All matrixes are initialized under the normal distribution.
 
         self.neu = neu
@@ -57,15 +57,18 @@ class rNN:
 
     
 
+    def trainingError(self,ref):
 
-
-    def Train(self,ref):
-        #ref e o vetor de todas as saidas desejados no dado instante de tempo.
         Ref = np.array(ref)
         if self.n_out > 1:
             Ref = Ref.reshape(len(ref),1)
+
+        return np.dot(self.Wro,self.a)+ self.Wbo - Ref
+
+    def Train(self,ref):
+        #ref e o vetor de todas as saidas desejados no dado instante de tempo.
         #calcular o vetor de erros
-        e = np.dot(self.Wro,self.a) - Ref
+        e = self.trainingError(ref)
 
         for saida in range(self.n_out):
             #Transpose respective output view..
@@ -100,8 +103,8 @@ class rNN:
         Input = np.array(input)
         Input = Input.reshape(Input.size,1)
         if Input.size == self.n_in:
-            self.a = (1-self.leakrate)*self.a + self.leakrate*np.tanh(np.dot(self.Wrr,self.a) + np.dot(self.Wir,Input))
-            y = np.dot(self.Wro,self.a) #+ self.Wbo
+            self.a = (1-self.leakrate)*self.a + self.leakrate*np.tanh(np.dot(self.Wrr,self.a) + np.dot(self.Wir,Input) + self.Wbr)
+            y = np.dot(self.Wro,self.a) + self.Wbo
             return y
         else:
             raise ValueError("input must have size n_in")
@@ -110,9 +113,11 @@ class rNN:
 
     def CopyWeights(self, Rede):
         if self.Wro.shape == Rede.Wro.shape:
-            self.Wro = Rede.Wro
+            self.Wro = np.copy(Rede.Wro)
         else:
             print "shapes of the weights are not equal"
+
+
 
         #rotina de atualizacao dos estados, retorna a saida.
 

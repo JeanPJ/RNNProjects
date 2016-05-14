@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from RNN import *
 
+
 def delay_of_signal(signal,steps_ahead = 23): #less powerful version of dataset_time_window, for testing purposes.
     signal = np.array(signal)
     signal.shape = (len(signal), 1)
@@ -61,7 +62,7 @@ Vtube = 1.02 #volume no tubo de transporte
 
 T0 = 0 #condicao inicial
 
-t = np.arange(0,1000,t_step) #tempo de simulacao
+t = np.arange(0,2000,t_step) #tempo de simulacao
 
 iterations = range(len(t))
 Q_plot = np.empty_like(t)
@@ -98,11 +99,12 @@ q_past = np.empty_like(np.arange(delta_converted))
 T_past = np.empty_like(q_past)
 Ttube_past =  np.empty_like(q_past)
 Tout_past = np.empty_like(q_past)
-Tfuturo = 50 #referencia degrau.
+Tfuturo = 30 #referencia degrau.
+Tref_plot = np.empty_like(t)
 
 for i in range(delta_converted):#Numero de passos necessarios para dar o equivalente a passagem no tempo de delta.
 
-
+    q = q + 0.001*np.random.randn()
     T_past[i] = T
     Ttube_past[i] = Ttube
     q_past[i] = q
@@ -113,26 +115,27 @@ for i in range(delta_converted):#Numero de passos necessarios para dar o equival
         Tout = Ttube_past[i - np.floor(Vtube/(q*t_step))]
 
 
-    Tout_past[i] = Tout
+    Tout_past[i] = Tout + np.random.randn()
+    q = 0.017
 
-print "Janela de Tempo inicial definida"
 for i in iterations:
-    print "timestep %f of %f" %(i, len(t))
     #espaco para definicao do sinal de controle, onde entraria a rede
     #q = Q[i]
     if i%(t_Ctrl/t_step) == 0:
     #etapa de treino
-        CtrlNetTrainer.Update([Tout_past[0],Tout])
+        white_noise = np.random.randn()
         CtrlNetTrainer.Train(q_past[0])
+        CtrlNetTrainer.Update([Tout_past[0],Tout + white_noise])
 
     #etapa de teste
         CtrlNetController.CopyWeights(CtrlNetTrainer)
-        q = CtrlNetController.Update([Tout,Tfuturo])
+        q = CtrlNetController.Update([Tout+ white_noise,Tfuturo])
 
         if q > 0.03:
             q = 0.03
+
         if q < 0.005:
-            q = 0.005
+           q = 0.005
 
 
 
@@ -149,9 +152,11 @@ for i in iterations:
 
 
     Tout_plot[i] = Tout
+    Tref_plot[i] = Tfuturo
 
     q_past = UpdateTimeWindow(q_past,q)
     Tout_past = UpdateTimeWindow(Tout_past,Tout)
+    T_past = UpdateTimeWindow(T_past,T)
 
 
 
@@ -170,6 +175,8 @@ p2 = sub[1].plot(t,Q_plot,label = 'Vazao Inlet')
 p3 = sub[0].plot(t,Ttube_plot,label = 'Temperatura Tubo')
 
 p4 = sub[0].plot(t,Tout_plot,label = 'Temperatura Saida')
+
+p5 = sub[0].plot(t,Tref_plot,label = 'Referencia')
 
 
 sub[0].legend()
