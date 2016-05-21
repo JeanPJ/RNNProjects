@@ -3,6 +3,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from copy import *
+
 from RNN import *
 
 def FindEquilibrium_q(T):
@@ -75,16 +77,31 @@ def UpdateTimeWindow(A,x): #Dado um array unidimensional A, elimina A[1] e acres
     B = np.append(B,x)
     return B
 
+def normalize(q):
+    qmin = 0.005
+    qmax = 0.03
+    x = (q-qmin)/(qmax - qmin)
+
+    return x
+
+def denormalize(x):
+
+    qmin = 0.005
+    qmax = 0.03
+    q = (qmax - qmin)*x + qmin
+
+
+    return q
 
 #Parametros do problema.
-
+t_Stop = 700 #tempo corrente da simulacao
 t_step = 0.5 #periodo de amostragem da simulacao.
 t_Ctrl = 4 #Periodo de amostragem do controle.
 Vtube = 1.02 #volume no tubo de transporte
 
 T0 = 0 #condicao inicial
 
-t = np.arange(0,1000,t_step) #tempo de simulacao
+t = np.arange(0,t_Stop,t_step) #tempo de simulacao
 
 iterations = range(len(t))
 Q_plot = np.empty_like(t)
@@ -97,7 +114,7 @@ Tout_plot = np.empty_like(t)
 T = T0
 Ttube = 0.99*T0
 Tout = Ttube
-Q = 0.0167 +0.01*np.sin(t)
+#Q = 0.0167 +0.01*np.sin(t)
 q = 0.0167
 
 qmax = 0.03
@@ -121,7 +138,8 @@ f_ir = 0.1
 f_br = 0.5
 
 CtrlNetTrainer = rNN(neurons,inputs,outputs,gama,ro,psi,f_ir,f_br)
-CtrlNetController = rNN(neurons,inputs,outputs,gama,ro,psi,f_ir,f_br)
+CtrlNetController = deepcopy(CtrlNetTrainer)
+
 
 #Criacao da janela da condicao inicial.
 
@@ -129,7 +147,7 @@ q_past = np.empty_like(np.arange(delta_converted))
 T_past = np.empty_like(q_past)
 Ttube_past =  np.empty_like(q_past)
 Tout_past = np.empty_like(q_past)
-Tfuturo = 30 #referencia degrau.
+Tfuturo = 40 #referencia degrau.
 Tref_plot = np.empty_like(t)
 Training_Error_plot = np.empty_like(t)
 
@@ -155,23 +173,32 @@ for i in iterations:
     #q = Q[i]
     if i%(t_Ctrl/t_step) == 0:
     #etapa de treino
+
+        #Tmean = np.mean(Tout_past)
+       # Tstd = np.std(Tout_past)
+
+
         white_noise = np.random.randn()
-        CtrlNetTrainer.Update([(Tout_past[0]-Tmin)/Tmax,((Tout + white_noise)-Tmin)/Tmax])
-        CtrlNetTrainer.Train(q_past[0])
-        trainingerror = CtrlNetTrainer.trainingError(q_past[0])
+        CtrlNetTrainer.Update([(Tout_past[0]-Tmin)/(Tmax - Tmin),((Tout + white_noise)-Tmin)/(Tmax - Tmin)])
+        #CtrlNetTrainer.Update([(Tout_past[0]-Tmean)/Tstd,((Tout + white_noise)-Tmean)/Tstd])
+        u_ctrlpast = normalize(q_past[0])
+        CtrlNetTrainer.Train(u_ctrlpast)
+        trainingerror = CtrlNetTrainer.trainingError(u_ctrlpast)
 
 
     #etapa de teste
         CtrlNetController.CopyWeights(CtrlNetTrainer)
-        q = CtrlNetController.Update([((Tout+ white_noise)-Tmin)/Tmax,(Tfuturo-Tmin)/Tmax])
+        uctrl = CtrlNetController.Update([((Tout + white_noise)-Tmin)/(Tmax-Tmin),(Tfuturo-Tmin)/(Tmax-Tmin)])
+        q = denormalize(uctrl)
+        #q = CtrlNetController.Update([((Tout + white_noise)-Tmean)/Tstd,(Tfuturo-Tmean)/Tstd])
 
         control = q
 
-        if q > 0.03:
-            q = 0.03
+        if q > qmax:
+            q = qmax
 
-        if q < 0.005:
-           q = 0.005
+        if q < qmin:
+           q = qmin
 
 
 
@@ -201,6 +228,7 @@ for i in iterations:
 
 
 f, sub = plt.subplots(4, sharex=True)
+
 
 
 p1 = sub[0].plot(t,T_plot,label = 'Temperatura do tanque')
@@ -234,6 +262,8 @@ plt.show(p2)
 plt.show(p3)
 
 plt.show(p4)
+
+
 
 
 
