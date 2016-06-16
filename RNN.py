@@ -14,7 +14,7 @@ def Sparcity(M,psi):
     return N*M
 class rNN:
 
-    def __init__(self,neu,n_in,n_out,gama=0.5,ro=1,psi=0.5,in_scale=0.1,bias_scale=0.5,alfa=10.0,forget = 1.0-10.0**-6.0):
+    def __init__(self,neu,n_in,n_out,gama=0.5,ro=1,psi=0.5,in_scale=0.1,bias_scale=0.5,alfa=10.0,forget = 1):
         #All matrixes are initialized under the normal distribution.
 
         self.neu = neu
@@ -48,18 +48,24 @@ class rNN:
 
 
 
-        #initial conditions.
+        #initial conditions MQR variables.
 
         self.a = np.random.normal(0,1,[neu,1])
+        sigma_e=0.001
+        sigma_q=0.001
+        sigma_v=0.001
 
         #covariance matrix
         self.P = np.eye(neu)/alfa
 
     
+    def getWro(self,n=0): #retorna a coluna n do vetor Wro
 
+
+        return self.Wro[n]
     def trainingError(self,ref):
 
-        Ref = np.array(ref)
+        Ref = np.array(ref,dtype = np.float64)
         if self.n_out > 1:
             Ref = Ref.reshape(len(ref),1)
 
@@ -119,6 +125,8 @@ class rNN:
 
 
 
+
+    #def
         #rotina de atualizacao dos estados, retorna a saida.
 
 
