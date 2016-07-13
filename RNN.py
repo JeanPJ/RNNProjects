@@ -35,7 +35,6 @@ class rNN:
         self.forget = forget #forget factor of the RLS Algorithm
 
         self.Wrr = Sparcity(self.Wrr,self.psi) #the probability of a memeber of the Matrix Wrr being zero is psi.
-
         #forcing Wrr to have ro as the maximum eigenvalue
         eigs = np.linalg.eigvals(self.Wrr)
         radius = np.abs(np.max(eigs))
@@ -51,9 +50,11 @@ class rNN:
         #initial conditions MQR variables.
 
         self.a = np.random.normal(0,1,[neu,1])
-        sigma_e=0.001
-        sigma_q=0.001
-        sigma_v=0.001
+        self.sigma_e = 0.001
+        self.sigma_q = 0.001
+        self.sigma_v = 0.001
+        self.K_a = 6
+        self.K_b = 3*self.K_a
 
         #covariance matrix
         self.P = np.eye(neu)/alfa
@@ -69,7 +70,7 @@ class rNN:
         if self.n_out > 1:
             Ref = Ref.reshape(len(ref),1)
 
-        return np.dot(self.Wro,self.a)+ self.Wbo - Ref
+        return np.dot(self.Wro,self.a) - Ref
 
     def Train(self,ref):
         #ref e o vetor de todas as saidas desejados no dado instante de tempo.
@@ -77,6 +78,12 @@ class rNN:
         e = self.trainingError(ref)
 
         for saida in range(self.n_out):
+
+
+            self.sigma_e = (1 - 1/(self.K_a*self.neu))*self.sigma_e + (1 - (1 - 1/(self.K_a*self.neu)))*e[saida]**2
+            self.sigma_q = (1 - 1/(self.K_a*self.neu))*self.sigma_q + (1 - (1 - 1/(self.K_a*self.neu)))*(np.dot(np.dot(self.a.T,self.P),self.a))**2
+            self.sigma_v = (1 - 1/(self.K_b*self.neu))*self.sigma_v + (1 - (1 - 1/(self.K_b*self.neu)))*e[saida]**2
+            self.forget = np.min([(np.sqrt(self.sigma_q)*np.sqrt(self.sigma_v))/(10**-8 + abs(np.sqrt(self.sigma_e) - np.sqrt(self.sigma_v))),0.999999])
             #Transpose respective output view..
             Theta = self.Wro[saida,:]
             Theta = Theta.reshape([self.neu,1])
@@ -86,16 +93,17 @@ class rNN:
             #the P equation step by step, it gets ugly if you do it at once
             A = self.P/self.forget
             B = np.dot(self.P,self.a)
-            C = np.dot(B,self.a.reshape([1,self.neu]))
+            C = np.dot(B,self.a.T)
             D = np.dot(C,self.P)
-            E = np.dot(self.a.reshape([1,self.neu]),self.P)
-            F = self.forget + np.dot(E,self.a)
+            E = np.dot(self.a.T,self.P)
+            G = np.dot(E,self.a)
+            F = self.forget + G
 
             #atualizacao final
             self.P = A - D/(self.forget*F)
 
             #calculo do erro
-            Theta = Theta - e[saida]*np.dot(self.P,self.a)
+            Theta = Theta - e[saida]*B
 
             Theta = Theta.reshape([1,self.neu])
 
@@ -110,7 +118,7 @@ class rNN:
         Input = Input.reshape(Input.size,1)
         if Input.size == self.n_in:
             self.a = (1-self.leakrate)*self.a + self.leakrate*np.tanh(np.dot(self.Wrr,self.a) + np.dot(self.Wir,Input) + self.Wbr)
-            y = np.dot(self.Wro,self.a) + self.Wbo
+            y = np.dot(self.Wro,self.a)
             return y
         else:
             raise ValueError("input must have size n_in")
